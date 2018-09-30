@@ -1,10 +1,17 @@
 package schuitj.drone.lib.drone;
 
 import java.io.Closeable;
-import java.io.IOException;
 
 public interface DroneCommander extends Closeable {
-    void takeOff() throws IOException;
+    void setThrottle(int amount);
 
-    void land() throws IOException;
+    void setPitch(int amount);
+
+    void setYaw(int amount);
+
+    void setRoll(int amount);
+
+    void takeOff();
+
+    void land();
 }

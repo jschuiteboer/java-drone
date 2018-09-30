@@ -8,10 +8,6 @@
         </layout>
     </appender>
 
-    <logger name="schuitj.drone.lib.drone.net.TransportConnection">
-        <level value="WARN"/>
-    </logger>
-
     <root>
         <level value="DEBUG" />
         <appender-ref ref="console" />

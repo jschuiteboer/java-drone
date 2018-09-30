@@ -28,7 +28,7 @@ public class TransportConnection implements Closeable {
         }
     }
 
-    public void send(byte[] bytes) throws IOException {
+    public synchronized void send(byte[] bytes) throws IOException {
         final OutputStream outputStream = socket.getOutputStream();
 
         if(log.isDebugEnabled()) {
@@ -39,7 +39,7 @@ public class TransportConnection implements Closeable {
         outputStream.write(bytes);
     }
 
-    public byte[] receive(int size) throws IOException {
+    public synchronized byte[] receive(int size) throws IOException {
         final InputStream inputStream = socket.getInputStream();
         byte[] bytes = new byte[size];
 

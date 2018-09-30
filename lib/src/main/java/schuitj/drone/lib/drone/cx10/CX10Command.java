@@ -1,7 +1,7 @@
 package schuitj.drone.lib.drone.cx10;
 
 import lombok.Data;
-import schuitj.drone.lib.drone.Command;
+import schuitj.drone.lib.drone.net.Command;
 import schuitj.drone.lib.util.ByteUtils;
 
 @Data

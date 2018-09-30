@@ -21,63 +21,109 @@ public class CX10CommanderImpl implements CX10Commander {
     private TransportConnection transportConnection;
     private CommandConnection commandConnection;
 
-    private TransportConnection getTransportConnection() throws IOException {
-        if(this.transportConnection == null) {
-            this.transportConnection = new TransportConnection(HOST, TRANSPORT_CONNECTION_PORT);
+    private HeartbeatThread heartbeatThread;
 
-            log.debug("sending handshake");
-            transportConnection.send(this.loadBinaryResource("handshake1.bin"));
-            transportConnection.receive(106);
-            transportConnection.send(this.loadBinaryResource("handshake2.bin"));
-            transportConnection.receive(106);
-            transportConnection.send(this.loadBinaryResource("handshake3.bin"));
-            transportConnection.receive(170);
-            transportConnection.send(this.loadBinaryResource("handshake4.bin"));
-            transportConnection.receive(106);
-            transportConnection.send(this.loadBinaryResource("handshake5.bin"));
-            transportConnection.receive(106);
+    private CX10Command lastCommand = new CX10Command();
 
-            log.debug("sending heartbeat");
-            transportConnection.send(this.loadBinaryResource("heartbeat.bin"));
-            transportConnection.receive(106);
+    public void initTransportConnection() throws IOException {
+        if(this.transportConnection != null) {
+            return; // already started
         }
 
-        return transportConnection;
+        this.transportConnection = new TransportConnection(HOST, TRANSPORT_CONNECTION_PORT);
+
+        log.debug("sending handshake");
+        transportConnection.send(this.loadBinaryResource("handshake1.bin"));
+        transportConnection.receive(106);
+        transportConnection.send(this.loadBinaryResource("handshake2.bin"));
+        transportConnection.receive(106);
+        transportConnection.send(this.loadBinaryResource("handshake3.bin"));
+        transportConnection.receive(170);
+        transportConnection.send(this.loadBinaryResource("handshake4.bin"));
+        transportConnection.receive(106);
+        transportConnection.send(this.loadBinaryResource("handshake5.bin"));
+        transportConnection.receive(106);
+
+        this.heartbeatThread = new HeartbeatThread(transportConnection, this.loadBinaryResource("heartbeat.bin"), 106, HEART_BEAT_SLEEP_MS);
+        this.heartbeatThread.start();
+
+        // wait for first heartbeat
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
-    private CommandConnection getCommandConnection() throws IOException {
-        if(this.commandConnection == null) {
-            this.getTransportConnection(); // init
-            this.commandConnection = new CommandConnection(HOST, COMMAND_CONNECTION_PORT);
+    public void startCommandConnection() throws IOException {
+        if(this.commandConnection != null) {
+            return; // already started
         }
 
-        return this.commandConnection;
+        this.initTransportConnection();
+
+        this.commandConnection = new CommandConnection(HOST, COMMAND_CONNECTION_PORT);
+
+        new Thread(() -> {
+            while(!Thread.currentThread().isInterrupted()) {
+                try {
+                    log.info("sending command {}", lastCommand);
+                    commandConnection.sendCommand(lastCommand);
+                    Thread.sleep(50);
+                } catch (InterruptedException | IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        }).start();
     }
 
     @Override
     public void close() throws IOException {
-        if(this.transportConnection != null) {
-            this.transportConnection.close();
+        log.debug("stopping");
+
+        if(this.heartbeatThread != null) {
+            this.heartbeatThread.interrupt();
         }
+
         if(this.commandConnection != null) {
             this.commandConnection.close();
         }
+
+        if(this.transportConnection != null) {
+            this.transportConnection.close();
+        }
     }
 
     @Override
-    public void takeOff() throws IOException {
-        CX10Command command = new CX10Command();
-        command.setTakeOff(true);
-
-        this.getCommandConnection().sendCommand(command);
+    public void setThrottle(int amount) {
+        this.lastCommand.setThrottle(amount);
     }
 
     @Override
-    public void land() throws IOException {
-        CX10Command command = new CX10Command();
-        command.setLand(true);
+    public void setPitch(int amount) {
+        this.lastCommand.setPitch(amount);
+    }
 
-        this.getCommandConnection().sendCommand(command);
+    @Override
+    public void setYaw(int amount) {
+        this.lastCommand.setYaw(amount);
+    }
+
+    @Override
+    public void setRoll(int amount) {
+        this.lastCommand.setRoll(amount);
+    }
+
+    @Override
+    public void takeOff() {
+        this.lastCommand.setTakeOff(true);
+        this.lastCommand.setLand(false);
+    }
+
+    @Override
+    public void land() {
+        this.lastCommand.setTakeOff(false);
+        this.lastCommand.setLand(true);
     }
 
     @Override

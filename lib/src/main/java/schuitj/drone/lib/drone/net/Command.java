@@ -1,4 +1,4 @@
-package schuitj.drone.lib.drone;
+package schuitj.drone.lib.drone.net;
 
 public interface Command {
     byte[] toByteArray();

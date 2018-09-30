@@ -1,7 +1,6 @@
 package schuitj.drone.lib.drone.net;
 
 import lombok.extern.slf4j.Slf4j;
-import schuitj.drone.lib.drone.Command;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.*;
@@ -28,7 +27,7 @@ public class CommandConnection implements Closeable {
         }
     }
 
-    public void sendCommand(Command command) throws IOException {
+    public synchronized void sendCommand(Command command) throws IOException {
         byte[] data = command.toByteArray();
         DatagramPacket packet = new DatagramPacket(data, 0, data.length, host, port);
 
