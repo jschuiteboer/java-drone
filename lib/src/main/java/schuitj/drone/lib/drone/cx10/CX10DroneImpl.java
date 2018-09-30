@@ -18,13 +18,49 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
     private static final int VIDEO_RECORD_PORT = 8890;
     private static final int COMMAND_CONNECTION_PORT = 8895;
     private static final int HEART_BEAT_SLEEP_MS = 5000;
+    private static final int HEART_BEAT_RESPONSE_SIZE = 106;
+
+    private final CX10Command command;
+    private final Thread commandThread;
+    private final byte[] heartbeatPacket;
+    private final Thread heartbeatThread;
 
     private TransportConnection transportConnection;
     private CommandConnection commandConnection;
 
-    private HeartbeatThread heartbeatThread;
+    public CX10DroneImpl() throws IOException {
+        this.command = new CX10Command();
 
-    private CX10Command lastCommand = new CX10Command();
+        this.heartbeatPacket = this.loadBinaryResource("heartbeat.bin");
+
+        this.heartbeatThread = new Thread(() -> {
+            while(!Thread.currentThread().isInterrupted()) {
+                try {
+                    log.debug("sending heartbeat");
+                    this.transportConnection.send(this.heartbeatPacket);
+                    this.transportConnection.receive(HEART_BEAT_RESPONSE_SIZE);
+
+                    Thread.sleep(HEART_BEAT_SLEEP_MS);
+                } catch (InterruptedException | IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        }, "cx10 heartbeat");
+        this.heartbeatThread.setDaemon(true);
+
+        this.commandThread = new Thread(() -> {
+            while(!Thread.currentThread().isInterrupted()) {
+                try {
+                    log.info("sending command {}", command);
+                    commandConnection.sendCommand(command);
+                    Thread.sleep(50);
+                } catch (InterruptedException | IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        }, "cx10 command");
+        this.commandThread.setDaemon(true);
+    }
 
     public void initTransportConnection() throws IOException {
         if(this.transportConnection != null) {
@@ -45,7 +81,6 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
         transportConnection.send(this.loadBinaryResource("handshake5.bin"));
         transportConnection.receive(106);
 
-        this.heartbeatThread = new HeartbeatThread(transportConnection, this.loadBinaryResource("heartbeat.bin"), 106, HEART_BEAT_SLEEP_MS);
         this.heartbeatThread.start();
 
         // wait for first heartbeat
@@ -65,26 +100,12 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
 
         this.commandConnection = new CommandConnection(HOST, COMMAND_CONNECTION_PORT);
 
-        new Thread(() -> {
-            while(!Thread.currentThread().isInterrupted()) {
-                try {
-                    log.info("sending command {}", lastCommand);
-                    commandConnection.sendCommand(lastCommand);
-                    Thread.sleep(50);
-                } catch (InterruptedException | IOException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-        }).start();
+        this.commandThread.start();
     }
 
     @Override
     public void close() throws IOException {
         log.debug("stopping");
-
-        if(this.heartbeatThread != null) {
-            this.heartbeatThread.interrupt();
-        }
 
         if(this.commandConnection != null) {
             this.commandConnection.close();
@@ -97,34 +118,34 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
 
     @Override
     public void setThrottle(int amount) {
-        this.lastCommand.setThrottle(amount);
+        this.command.setThrottle(amount);
     }
 
     @Override
     public void setPitch(int amount) {
-        this.lastCommand.setPitch(amount);
+        this.command.setPitch(amount);
     }
 
     @Override
     public void setYaw(int amount) {
-        this.lastCommand.setYaw(amount);
+        this.command.setYaw(amount);
     }
 
     @Override
     public void setRoll(int amount) {
-        this.lastCommand.setRoll(amount);
+        this.command.setRoll(amount);
     }
 
     @Override
     public void takeOff() {
-        this.lastCommand.setTakeOff(true);
-        this.lastCommand.setLand(false);
+        this.command.setTakeOff(true);
+        this.command.setLand(false);
     }
 
     @Override
     public void land() {
-        this.lastCommand.setTakeOff(false);
-        this.lastCommand.setLand(true);
+        this.command.setTakeOff(false);
+        this.command.setLand(true);
     }
 
     @Override

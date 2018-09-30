@@ -9,6 +9,7 @@ import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
 import schuitj.drone.lib.drone.cx10.CX10Drone;
 import schuitj.drone.lib.drone.cx10.CX10DroneImpl;
+import java.io.IOException;
 
 @Slf4j
 public class DroneApplication extends Application implements EventHandler<KeyEvent> {
@@ -44,7 +45,14 @@ public class DroneApplication extends Application implements EventHandler<KeyEve
 		primaryStage.show();
 
 		cx10Drone = new CX10DroneImpl();
-		((CX10DroneImpl) cx10Drone).startCommandConnection();
+
+		new Thread(() -> {
+			try {
+				((CX10DroneImpl) cx10Drone).startCommandConnection();
+			} catch (IOException ex) {
+				throw new RuntimeException("unable to start drone connection", ex);
+			}
+		}, "drone connection starter").start();
 	}
 
 	@Override
