@@ -1,8 +1,6 @@
 package schuitj.drone.lib.drone;
 
-import java.io.Closeable;
-
-public interface DroneCommander extends Closeable {
+public interface Drone {
     void setThrottle(int amount);
 
     void setPitch(int amount);

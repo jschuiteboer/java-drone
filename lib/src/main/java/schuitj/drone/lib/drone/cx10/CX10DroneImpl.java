@@ -4,12 +4,13 @@ import lombok.extern.slf4j.Slf4j;
 import schuitj.drone.lib.drone.net.CommandConnection;
 import schuitj.drone.lib.drone.net.TransportConnection;
 import schuitj.drone.lib.util.ByteUtils;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 
 @Slf4j
-public class CX10CommanderImpl implements CX10Commander {
+public class CX10DroneImpl implements CX10Drone, Closeable {
     private static final String HOST = "172.16.10.1";
 
     private static final int TRANSPORT_CONNECTION_PORT = 8888;

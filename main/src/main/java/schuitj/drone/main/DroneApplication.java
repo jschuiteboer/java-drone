@@ -7,13 +7,13 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
-import schuitj.drone.lib.drone.cx10.CX10Commander;
-import schuitj.drone.lib.drone.cx10.CX10CommanderImpl;
+import schuitj.drone.lib.drone.cx10.CX10Drone;
+import schuitj.drone.lib.drone.cx10.CX10DroneImpl;
 
 @Slf4j
 public class DroneApplication extends Application implements EventHandler<KeyEvent> {
 
-	private CX10Commander drone;
+	private CX10Drone cx10Drone;
 
 	// create a window that shows a message that it's waiting for a connection
 	// once connected
@@ -43,8 +43,8 @@ public class DroneApplication extends Application implements EventHandler<KeyEve
 		primaryStage.setScene(scene);
 		primaryStage.show();
 
-		drone = new CX10CommanderImpl();
-		((CX10CommanderImpl) drone).startCommandConnection();
+		cx10Drone = new CX10DroneImpl();
+		((CX10DroneImpl) cx10Drone).startCommandConnection();
 	}
 
 	@Override
@@ -53,36 +53,36 @@ public class DroneApplication extends Application implements EventHandler<KeyEve
 
 		switch(event.getCode()) {
 			case W:
-				drone.setThrottle(amount);
+				cx10Drone.setThrottle(amount);
 				break;
 			case S:
-				drone.setThrottle(-amount);
+				cx10Drone.setThrottle(-amount);
 				break;
 			case A:
-				drone.setYaw(-amount);
+				cx10Drone.setYaw(-amount);
 				break;
 			case D:
-				drone.setYaw(amount);
+				cx10Drone.setYaw(amount);
 				break;
 
 			case UP:
-				drone.setPitch(amount);
+				cx10Drone.setPitch(amount);
 				break;
 			case DOWN:
-				drone.setPitch(-amount);
+				cx10Drone.setPitch(-amount);
 				break;
 			case LEFT:
-				drone.setRoll(-amount);
+				cx10Drone.setRoll(-amount);
 				break;
 			case RIGHT:
-				drone.setRoll(amount);
+				cx10Drone.setRoll(amount);
 				break;
 
 			case PAGE_UP:
-				drone.takeOff();
+				cx10Drone.takeOff();
 				break;
 			case PAGE_DOWN:
-				drone.land();
+				cx10Drone.land();
 				break;
 		}
 	}
