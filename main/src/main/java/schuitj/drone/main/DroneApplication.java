@@ -1,18 +1,17 @@
 package schuitj.drone.main;
 
 import javafx.application.Application;
-import javafx.event.EventHandler;
 import javafx.scene.Scene;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
 import schuitj.drone.lib.drone.cx10.CX10Drone;
 import schuitj.drone.lib.drone.cx10.CX10DroneImpl;
+import schuitj.drone.main.io.GamePadHandler;
 import java.io.IOException;
 
 @Slf4j
-public class DroneApplication extends Application implements EventHandler<KeyEvent> {
+public class DroneApplication extends Application {
 
 	private CX10Drone cx10Drone;
 
@@ -34,17 +33,23 @@ public class DroneApplication extends Application implements EventHandler<KeyEve
 		//fxmlLoader.setControllerFactory(springContext::getBean);
 		//root = fxmlLoader.load();
 
+		cx10Drone = new CX10DroneImpl();
+
+		//KeyboardHandler keyboardHandler = new KeyboardHandler();
+		//keyboardHandler.setDrone(cx10Drone);
+
+		GamePadHandler gamepadHandler = new GamePadHandler();
+		gamepadHandler.setDrone(cx10Drone);
+
 		StackPane root = new StackPane();
 
 		Scene scene = new Scene(root, 800, 600);
-		scene.addEventHandler(KeyEvent.KEY_PRESSED, this);
-		scene.addEventHandler(KeyEvent.KEY_RELEASED, this);
+		//scene.addEventHandler(KeyEvent.KEY_PRESSED, keyboardHandler);
+		//scene.addEventHandler(KeyEvent.KEY_RELEASED, keyboardHandler);
 
 		primaryStage.setTitle("Drone Application");
 		primaryStage.setScene(scene);
 		primaryStage.show();
-
-		cx10Drone = new CX10DroneImpl();
 
 		new Thread(() -> {
 			try {
@@ -53,50 +58,13 @@ public class DroneApplication extends Application implements EventHandler<KeyEve
 				throw new RuntimeException("unable to start drone connection", ex);
 			}
 		}, "drone connection starter").start();
+
+		//keyboardHandler.start();
+		gamepadHandler.start();
 	}
 
 	@Override
 	public void stop() throws Exception {
 		((CX10DroneImpl) cx10Drone).close();
-	}
-
-	@Override
-	public void handle(KeyEvent event) {
-		float amount = event.getEventType() == KeyEvent.KEY_PRESSED ? 1 : 0;
-
-		switch(event.getCode()) {
-			case W:
-				cx10Drone.setThrottle(amount);
-				break;
-			case S:
-				cx10Drone.setThrottle(-amount);
-				break;
-			case A:
-				cx10Drone.setYaw(-amount);
-				break;
-			case D:
-				cx10Drone.setYaw(amount);
-				break;
-
-			case UP:
-				cx10Drone.setPitch(amount);
-				break;
-			case DOWN:
-				cx10Drone.setPitch(-amount);
-				break;
-			case LEFT:
-				cx10Drone.setRoll(-amount);
-				break;
-			case RIGHT:
-				cx10Drone.setRoll(amount);
-				break;
-
-			case PAGE_UP:
-				cx10Drone.takeOff();
-				break;
-			case PAGE_DOWN:
-				cx10Drone.land();
-				break;
-		}
 	}
 }

@@ -28,6 +28,7 @@ ext {
 
 repositories {
 	mavenCentral()
+	maven { url "https://jitpack.io" }
 }
 
 dependencies {
@@ -35,6 +36,7 @@ dependencies {
 
 	compile('org.springframework.boot:spring-boot-starter')
 	compile('org.apache.commons:commons-lang3:3.1')
+	compile('com.github.WilliamAHartman:Jamepad:1.1')
 	compileOnly('org.projectlombok:lombok')
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 	testCompile("org.powermock:powermock-module-junit:${powermockVersion}")

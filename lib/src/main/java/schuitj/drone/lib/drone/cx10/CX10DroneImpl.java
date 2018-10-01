@@ -29,8 +29,9 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
     private CommandConnection commandConnection;
     private boolean sendCommand;
 
-    public CX10DroneImpl() throws IOException {
+    public CX10DroneImpl() {
         this.command = new CX10Command();
+
 
         this.heartbeatPacket = this.loadBinaryResource("heartbeat.bin");
 
@@ -111,6 +112,14 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
     public void close() throws IOException {
         log.debug("stopping");
 
+        if(this.heartbeatThread.isAlive()) {
+            this.heartbeatThread.interrupt();
+        }
+
+        if(this.commandThread.isAlive()) {
+            this.commandThread.interrupt();
+        }
+
         if(this.commandConnection != null) {
             this.commandConnection.close();
         }
@@ -122,24 +131,32 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
 
     @Override
     public void setThrottle(float amount) {
+        if(amount > 1) amount = 1;
+        if(amount < -1) amount = -1;
         this.command.setThrottle(amount);
         this.sendCommand = true;
     }
 
     @Override
     public void setPitch(float amount) {
+        if(amount > 1) amount = 1;
+        if(amount < -1) amount = -1;
         this.command.setPitch(amount);
         this.sendCommand = true;
     }
 
     @Override
     public void setYaw(float amount) {
+        if(amount > 1) amount = 1;
+        if(amount < -1) amount = -1;
         this.command.setYaw(amount);
         this.sendCommand = true;
     }
 
     @Override
     public void setRoll(float amount) {
+        if(amount > 1) amount = 1;
+        if(amount < -1) amount = -1;
         this.command.setRoll(amount);
         this.sendCommand = true;
     }
@@ -168,10 +185,12 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
         throw new IllegalStateException("not implemented");
     }
 
-    private byte[] loadBinaryResource(String name) throws IOException {
+    private byte[] loadBinaryResource(String name) {
         try(InputStream inputStream = this.getClass().getResourceAsStream(name)) {
             Objects.requireNonNull(inputStream, "resource not found '" + name + "'");
             return ByteUtils.readAll(inputStream);
+        } catch (IOException ex) {
+            throw new RuntimeException("unable to load resource '" + name + "'", ex);
         }
     }
 }
