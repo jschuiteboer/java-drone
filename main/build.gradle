@@ -22,6 +22,10 @@ group = 'schuitj'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = 1.8
 
+ext {
+	powermockVersion = '1.7.1'
+}
+
 repositories {
 	mavenCentral()
 }
@@ -33,4 +37,6 @@ dependencies {
 	compile('org.apache.commons:commons-lang3:3.1')
 	compileOnly('org.projectlombok:lombok')
 	testCompile('org.springframework.boot:spring-boot-starter-test')
+	testCompile("org.powermock:powermock-module-junit:${powermockVersion}")
+	testCompile("org.powermock:powermock-api-mockito2:${powermockVersion}")
 }

@@ -1,24 +1,45 @@
 package schuitj.drone.lib.drone.cx10;
 
 import lombok.Data;
+import org.apache.commons.lang3.Validate;
 import schuitj.drone.lib.drone.net.Command;
 import schuitj.drone.lib.util.ByteUtils;
 
 @Data
 public class CX10Command implements Command {
-    private int pitch;
-    private int yaw;
-    private int roll;
-    private int throttle;
+    private float pitch;
+    private float yaw;
+    private float roll;
+    private float throttle;
     private boolean takeOff;
     private boolean land;
 
+    public void setPitch(float amount) {
+        Validate.inclusiveBetween(-1f, 1f, amount);
+        this.pitch = amount;
+    }
+
+    public void setYaw(float amount) {
+        Validate.inclusiveBetween(-1f, 1f, amount);
+        this.yaw = amount;
+    }
+
+    public void setRoll(float amount) {
+        Validate.inclusiveBetween(-1f, 1f, amount);
+        this.roll = amount;
+    }
+
+    public void setThrottle(float amount) {
+        Validate.inclusiveBetween(-1f, 1f, amount);
+        this.throttle = amount;
+    }
+
     @Override
     public byte[] toByteArray() {
-        byte pitch    = (byte) (this.getPitch() + 128);
-        byte yaw      = (byte) (this.getYaw() + 128);
-        byte roll     = (byte) (this.getRoll() + 128);
-        byte throttle = (byte) (this.getThrottle() + 128);
+        byte pitch    = (byte) (this.getPitch() * 127 + 128);
+        byte yaw      = (byte) (this.getYaw() * 127 + 128);
+        byte roll     = (byte) (this.getRoll() * 127 + 128);
+        byte throttle = (byte) (this.getThrottle() * 127 + 128);
         boolean takeOff = this.isTakeOff();
         boolean land = this.isLand();
 

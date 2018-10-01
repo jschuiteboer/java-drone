@@ -27,6 +27,7 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
 
     private TransportConnection transportConnection;
     private CommandConnection commandConnection;
+    private boolean sendCommand;
 
     public CX10DroneImpl() throws IOException {
         this.command = new CX10Command();
@@ -51,8 +52,11 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
         this.commandThread = new Thread(() -> {
             while(!Thread.currentThread().isInterrupted()) {
                 try {
-                    log.info("sending command {}", command);
-                    commandConnection.sendCommand(command);
+                    if(sendCommand) {
+                        log.info("sending command {}", command);
+                        commandConnection.sendCommand(command);
+                        sendCommand = false;
+                    }
                     Thread.sleep(50);
                 } catch (InterruptedException | IOException ex) {
                     throw new RuntimeException(ex);
@@ -117,35 +121,41 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
     }
 
     @Override
-    public void setThrottle(int amount) {
+    public void setThrottle(float amount) {
         this.command.setThrottle(amount);
+        this.sendCommand = true;
     }
 
     @Override
-    public void setPitch(int amount) {
+    public void setPitch(float amount) {
         this.command.setPitch(amount);
+        this.sendCommand = true;
     }
 
     @Override
-    public void setYaw(int amount) {
+    public void setYaw(float amount) {
         this.command.setYaw(amount);
+        this.sendCommand = true;
     }
 
     @Override
-    public void setRoll(int amount) {
+    public void setRoll(float amount) {
         this.command.setRoll(amount);
+        this.sendCommand = true;
     }
 
     @Override
     public void takeOff() {
         this.command.setTakeOff(true);
         this.command.setLand(false);
+        this.sendCommand = true;
     }
 
     @Override
     public void land() {
         this.command.setTakeOff(false);
         this.command.setLand(true);
+        this.sendCommand = true;
     }
 
     @Override

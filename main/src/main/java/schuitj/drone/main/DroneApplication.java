@@ -56,8 +56,13 @@ public class DroneApplication extends Application implements EventHandler<KeyEve
 	}
 
 	@Override
+	public void stop() throws Exception {
+		((CX10DroneImpl) cx10Drone).close();
+	}
+
+	@Override
 	public void handle(KeyEvent event) {
-		int amount = event.getEventType() == KeyEvent.KEY_PRESSED ? 127 : 0;
+		float amount = event.getEventType() == KeyEvent.KEY_PRESSED ? 1 : 0;
 
 		switch(event.getCode()) {
 			case W:
