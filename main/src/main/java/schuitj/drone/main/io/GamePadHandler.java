@@ -7,27 +7,22 @@ import org.apache.commons.lang3.Validate;
 import schuitj.drone.lib.drone.Drone;
 
 @Slf4j
-public class GamePadHandler implements InputHandler {
+public class GamePadHandler {
     private static final float SCALE = 2;
 
-    private Drone drone;
+    private final Thread gamePadHandlerThread;
 
-    @Override
-    public void setDrone(Drone drone) {
+    public GamePadHandler(Drone drone) {
         Validate.notNull(drone);
-        this.drone = drone;
-    }
 
-    @Override
-    public void start() {
-        Thread gamepadHandlerThread = new Thread(() -> {
+        this.gamePadHandlerThread = new Thread(() -> {
             final ControllerManager controllers = new ControllerManager();
             controllers.initSDLGamepad();
 
             try {
-                while(true) {
+                while(!Thread.currentThread().isInterrupted()) {
                     ControllerState state = controllers.getState(0);
-                    
+
                     if (!state.isConnected) {
                         try {
                             Thread.sleep(1000);
@@ -53,7 +48,14 @@ public class GamePadHandler implements InputHandler {
                 controllers.quitSDLGamepad();
             }
         }, "gamepad handler thread");
-        gamepadHandlerThread.setDaemon(true);
-        gamepadHandlerThread.start();
+        gamePadHandlerThread.setDaemon(true);
+    }
+
+    public void start() {
+        this.gamePadHandlerThread.start();
+    }
+
+    public void stop() {
+        this.gamePadHandlerThread.interrupt();
     }
 }
