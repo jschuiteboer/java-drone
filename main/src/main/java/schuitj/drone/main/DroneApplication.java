@@ -25,6 +25,7 @@ public class DroneApplication extends Application {
     //  smoothing when using the keyboard
     //  adjust trim with directional pad and buttons
     //  adjust sensitivity
+    //  check if the current network name looks like a drone name
 
     @Override
     public void start(Stage primaryStage) throws Exception {
