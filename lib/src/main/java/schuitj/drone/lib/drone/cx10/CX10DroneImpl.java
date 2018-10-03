@@ -2,6 +2,8 @@ package schuitj.drone.lib.drone.cx10;
 
 import lombok.extern.slf4j.Slf4j;
 import schuitj.drone.lib.drone.net.CommandConnection;
+import schuitj.drone.lib.drone.net.CommandThread;
+import schuitj.drone.lib.drone.net.HeartbeatThread;
 import schuitj.drone.lib.drone.net.TransportConnection;
 import schuitj.drone.lib.util.ByteUtils;
 import java.io.Closeable;
@@ -9,67 +11,29 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 
+// TODO: split this class up into smaller parts
 @Slf4j
 public class CX10DroneImpl implements CX10Drone, Closeable {
     private static final String HOST = "172.16.10.1";
-
     private static final int TRANSPORT_CONNECTION_PORT = 8888;
     private static final int VIDEO_STREAM_PORT = 8889;
     private static final int VIDEO_RECORD_PORT = 8890;
     private static final int COMMAND_CONNECTION_PORT = 8895;
+    private static final int COMMAND_SLEEP_MS = 50;
     private static final int HEART_BEAT_SLEEP_MS = 5000;
     private static final int HEART_BEAT_RESPONSE_SIZE = 106;
 
-    private final CX10Command command;
-    private final Thread commandThread;
-    private final byte[] heartbeatPacket;
-    private final Thread heartbeatThread;
+    private final CX10Command aggregateCommand = new CX10Command();
+
+    private CommandConnection commandConnection;
+    private CommandThread commandThread;
 
     private TransportConnection transportConnection;
-    private CommandConnection commandConnection;
-    private boolean sendCommand;
+    private HeartbeatThread heartbeatThread;
 
-    public CX10DroneImpl() {
-        this.command = new CX10Command();
-
-
-        this.heartbeatPacket = this.loadBinaryResource("heartbeat.bin");
-
-        this.heartbeatThread = new Thread(() -> {
-            while(!Thread.currentThread().isInterrupted()) {
-                try {
-                    log.debug("sending heartbeat");
-                    this.transportConnection.send(this.heartbeatPacket);
-                    this.transportConnection.receive(HEART_BEAT_RESPONSE_SIZE);
-
-                    Thread.sleep(HEART_BEAT_SLEEP_MS);
-                } catch (InterruptedException | IOException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-        }, "cx10 heartbeat");
-        this.heartbeatThread.setDaemon(true);
-
-        this.commandThread = new Thread(() -> {
-            while(!Thread.currentThread().isInterrupted()) {
-                try {
-                    if(sendCommand) {
-                        log.info("sending command {}", command);
-                        commandConnection.sendCommand(command);
-                        sendCommand = false;
-                    }
-                    Thread.sleep(50);
-                } catch (InterruptedException | IOException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-        }, "cx10 command");
-        this.commandThread.setDaemon(true);
-    }
-
-    public void initTransportConnection() throws IOException {
+    public void startTransportConnection() throws IOException {
         if(this.transportConnection != null) {
-            return; // already started
+            throw new IllegalStateException("already started");
         }
 
         this.transportConnection = new TransportConnection(HOST, TRANSPORT_CONNECTION_PORT);
@@ -86,6 +50,8 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
         transportConnection.send(this.loadBinaryResource("handshake5.bin"));
         transportConnection.receive(106);
 
+        byte[] heartbeatPacket = this.loadBinaryResource("heartbeat.bin");
+        this.heartbeatThread = new HeartbeatThread(transportConnection, heartbeatPacket, HEART_BEAT_RESPONSE_SIZE, HEART_BEAT_SLEEP_MS);
         this.heartbeatThread.start();
 
         // wait for first heartbeat
@@ -98,13 +64,14 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
 
     public void startCommandConnection() throws IOException {
         if(this.commandConnection != null) {
-            return; // already started
+            throw new IllegalStateException("already started");
         }
 
-        this.initTransportConnection();
+        this.startTransportConnection();
 
         this.commandConnection = new CommandConnection(HOST, COMMAND_CONNECTION_PORT);
 
+        this.commandThread = new CommandThread(commandConnection, COMMAND_SLEEP_MS);
         this.commandThread.start();
     }
 
@@ -112,20 +79,20 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
     public void close() throws IOException {
         log.debug("stopping");
 
-        if(this.heartbeatThread.isAlive()) {
+        if(this.heartbeatThread != null && this.heartbeatThread.isAlive()) {
             this.heartbeatThread.interrupt();
         }
 
-        if(this.commandThread.isAlive()) {
+        if(this.transportConnection != null) {
+            this.transportConnection.close();
+        }
+
+        if(this.commandThread != null && this.commandThread.isAlive()) {
             this.commandThread.interrupt();
         }
 
         if(this.commandConnection != null) {
             this.commandConnection.close();
-        }
-
-        if(this.transportConnection != null) {
-            this.transportConnection.close();
         }
     }
 
@@ -133,46 +100,56 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
     public void setThrottle(float amount) {
         if(amount > 1) amount = 1;
         if(amount < -1) amount = -1;
-        this.command.setThrottle(amount);
-        this.sendCommand = true;
+
+        aggregateCommand.setThrottle(amount);
+
+        this.commandThread.setNextCommand(aggregateCommand);
     }
 
     @Override
     public void setPitch(float amount) {
         if(amount > 1) amount = 1;
         if(amount < -1) amount = -1;
-        this.command.setPitch(amount);
-        this.sendCommand = true;
+
+        aggregateCommand.setPitch(amount);
+
+        this.commandThread.setNextCommand(aggregateCommand);
     }
 
     @Override
     public void setYaw(float amount) {
         if(amount > 1) amount = 1;
         if(amount < -1) amount = -1;
-        this.command.setYaw(amount);
-        this.sendCommand = true;
+
+        aggregateCommand.setYaw(amount);
+
+        this.commandThread.setNextCommand(aggregateCommand);
     }
 
     @Override
     public void setRoll(float amount) {
         if(amount > 1) amount = 1;
         if(amount < -1) amount = -1;
-        this.command.setRoll(amount);
-        this.sendCommand = true;
+
+        aggregateCommand.setRoll(amount);
+
+        this.commandThread.setNextCommand(aggregateCommand);
     }
 
     @Override
     public void takeOff() {
-        this.command.setTakeOff(true);
-        this.command.setLand(false);
-        this.sendCommand = true;
+        aggregateCommand.setTakeOff(true);
+        aggregateCommand.setLand(false);
+
+        this.commandThread.setNextCommand(aggregateCommand);
     }
 
     @Override
     public void land() {
-        this.command.setTakeOff(false);
-        this.command.setLand(true);
-        this.sendCommand = true;
+        aggregateCommand.setLand(true);
+        aggregateCommand.setTakeOff(false);
+
+        this.commandThread.setNextCommand(aggregateCommand);
     }
 
     @Override
