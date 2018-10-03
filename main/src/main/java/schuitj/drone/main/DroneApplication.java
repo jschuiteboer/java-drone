@@ -16,17 +16,6 @@ public class DroneApplication extends Application {
 
     private Drone drone;
 
-    // create a window that shows a message that it's waiting for a connection
-    // once connected
-    //  open the camera window
-    //  control using either the gamepad or the keyboard
-
-    // extra:
-    //  smoothing when using the keyboard
-    //  adjust trim with directional pad and buttons
-    //  adjust sensitivity
-    //  check if the current network name looks like a drone name
-
     @Override
     public void start(Stage primaryStage) throws Exception {
         //springContext = SpringApplication.run(DroneApplication.class);
