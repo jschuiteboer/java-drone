@@ -1,18 +1,18 @@
 buildscript {
-	ext {
-		springBootVersion = '2.0.5.RELEASE'
-	}
-	repositories {
-		mavenCentral()
-	}
-	dependencies {
-		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-	}
+    ext {
+        springBootVersion = '2.0.5.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
 }
 
 plugins {
-	id 'io.franzbecker.gradle-lombok' version '1.14'
-	id 'java'
+    id 'io.franzbecker.gradle-lombok' version '1.14'
+    id 'java'
 }
 
 apply plugin: 'org.springframework.boot'
@@ -23,22 +23,22 @@ version = '0.0.1-SNAPSHOT'
 sourceCompatibility = 1.8
 
 ext {
-	powermockVersion = '1.7.1'
+    powermockVersion = '1.7.1'
 }
 
 repositories {
-	mavenCentral()
-	maven { url "https://jitpack.io" }
+    mavenCentral()
+    maven { url "https://jitpack.io" }
 }
 
 dependencies {
-	compile project(':lib')
+    compile project(':lib')
 
-	compile('org.springframework.boot:spring-boot-starter')
-	compile('org.apache.commons:commons-lang3:3.1')
-	compile('com.github.WilliamAHartman:Jamepad:1.1')
-	compileOnly('org.projectlombok:lombok')
-	testCompile('org.springframework.boot:spring-boot-starter-test')
-	testCompile("org.powermock:powermock-module-junit:${powermockVersion}")
-	testCompile("org.powermock:powermock-api-mockito2:${powermockVersion}")
+    compile('org.springframework.boot:spring-boot-starter')
+    compile('org.apache.commons:commons-lang3:3.1')
+    compile('com.github.WilliamAHartman:Jamepad:1.1')
+    compileOnly('org.projectlombok:lombok')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+    testCompile("org.powermock:powermock-module-junit:${powermockVersion}")
+    testCompile("org.powermock:powermock-api-mockito2:${powermockVersion}")
 }
