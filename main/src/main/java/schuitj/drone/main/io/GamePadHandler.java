@@ -8,9 +8,13 @@ import schuitj.drone.lib.drone.Drone;
 
 @Slf4j
 public class GamePadHandler {
-    private static final float SCALE = 2;
+    private static final float DEFAULT_SCALE = 1;
+    private static final float DEFAULT_DEAD_ZONE = 0.15f;
 
     private final Thread gamePadHandlerThread;
+
+    private float scale = DEFAULT_SCALE;
+    private float deadZone = DEFAULT_DEAD_ZONE;
 
     public GamePadHandler(Drone drone) {
         Validate.notNull(drone);
@@ -31,10 +35,10 @@ public class GamePadHandler {
                         }
                     }
 
-                    drone.setThrottle(state.leftStickY * SCALE);
-                    drone.setYaw(state.leftStickX * SCALE);
-                    drone.setPitch(state.rightStickY * SCALE);
-                    drone.setRoll(state.rightStickX * SCALE);
+                    drone.setThrottle(this.parseAxis(state.leftStickY));
+                    drone.setYaw(this.parseAxis(state.leftStickX));
+                    drone.setPitch(this.parseAxis(state.rightStickY));
+                    drone.setRoll(this.parseAxis(state.rightStickX));
 
                     if(state.startJustPressed) {
                         drone.takeOff();
@@ -51,11 +55,45 @@ public class GamePadHandler {
         gamePadHandlerThread.setDaemon(true);
     }
 
+    public void setScale(float scale) {
+        if(scale < 1) {
+            throw new IllegalArgumentException("Invalid value for scale: " + scale);
+        }
+        this.scale = scale;
+    }
+
+    public void setDeadZone(float deadZone) {
+        Validate.inclusiveBetween(0f, 1f, deadZone);
+        this.deadZone = deadZone;
+    }
+
     public void start() {
         this.gamePadHandlerThread.start();
     }
 
     public void stop() {
         this.gamePadHandlerThread.interrupt();
+    }
+
+    private float parseAxis(float inputValue) {
+        boolean negate = false;
+        if(inputValue < 0) {
+            negate = true;
+            inputValue = -inputValue;
+        }
+
+        inputValue = (inputValue * (1 + deadZone)) - deadZone;
+
+        inputValue = inputValue * scale;
+
+        if(inputValue > 1) {
+            inputValue = 1;
+        }
+
+        if(negate) {
+            inputValue = -inputValue;
+        }
+
+        return inputValue;
     }
 }

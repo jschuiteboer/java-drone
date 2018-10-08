@@ -24,6 +24,7 @@ public class CommandThread extends Thread {
     public void run() {
         while(!this.isInterrupted()) {
             try {
+                // TODO: don't send repeated commands
                 if(nextCommand != null) {
                     log.info("sending command {}", nextCommand);
                     commandConnection.sendCommand(nextCommand);

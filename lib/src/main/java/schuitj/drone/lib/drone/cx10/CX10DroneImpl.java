@@ -98,9 +98,6 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
 
     @Override
     public void setThrottle(float amount) {
-        if(amount > 1) amount = 1;
-        if(amount < -1) amount = -1;
-
         aggregateCommand.setThrottle(amount);
 
         this.commandThread.setNextCommand(aggregateCommand);
@@ -108,9 +105,6 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
 
     @Override
     public void setPitch(float amount) {
-        if(amount > 1) amount = 1;
-        if(amount < -1) amount = -1;
-
         aggregateCommand.setPitch(amount);
 
         this.commandThread.setNextCommand(aggregateCommand);
@@ -118,9 +112,6 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
 
     @Override
     public void setYaw(float amount) {
-        if(amount > 1) amount = 1;
-        if(amount < -1) amount = -1;
-
         aggregateCommand.setYaw(amount);
 
         this.commandThread.setNextCommand(aggregateCommand);
@@ -128,9 +119,6 @@ public class CX10DroneImpl implements CX10Drone, Closeable {
 
     @Override
     public void setRoll(float amount) {
-        if(amount > 1) amount = 1;
-        if(amount < -1) amount = -1;
-
         aggregateCommand.setRoll(amount);
 
         this.commandThread.setNextCommand(aggregateCommand);
